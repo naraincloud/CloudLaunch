@@ -27,3 +27,81 @@ This deployment includes:
 - Public access provided using a minimal read-only bucket policy
 
 **Static Website URL:**
+http://cloudlaunch-site-bucket.s3-website-us-east-1.amazonaws.com
+
+
+---
+
+### 👤 IAM User Configuration
+
+**IAM User:** `cloudlaunch-user`
+
+**Permissions Overview:**
+
+| Permission | Bucket | Description |
+|-------------|---------|--------------|
+| `s3:ListBucket` | All 3 buckets | Can list bucket names |
+| `s3:GetObject`, `s3:PutObject` | `cloudlaunch-private-bucket` | Can upload and download (no delete) |
+| `s3:GetObject` | `cloudlaunch-site-bucket` | Read-only access |
+| — | `cloudlaunch-visible-only-bucket` | Cannot read object contents |
+| `ec2:Describe*` | VPC components | Read-only visibility into networking setup |
+
+**No delete permissions anywhere.**  
+**No full admin rights.**
+
+---
+
+### 📄 IAM Policy JSON
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListBuckets",
+      "Effect": "Allow",
+      "Action": "s3:ListAllMyBuckets",
+      "Resource": "*"
+    },
+    {
+      "Sid": "AccessCloudLaunchBuckets",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": [
+        "arn:aws:s3:::cloudlaunch-site-bucket",
+        "arn:aws:s3:::cloudlaunch-private-bucket",
+        "arn:aws:s3:::cloudlaunch-visible-only-bucket"
+      ]
+    },
+    {
+      "Sid": "SiteReadOnly",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": "arn:aws:s3:::cloudlaunch-site-bucket/*"
+    },
+    {
+      "Sid": "PrivateReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::cloudlaunch-private-bucket/*"
+    },
+    {
+      "Sid": "VisibleOnlyList",
+      "Effect": "Deny",
+      "Action": ["s3:GetObject"],
+      "Resource": "arn:aws:s3:::cloudlaunch-visible-only-bucket/*"
+    },
+    {
+      "Sid": "VPCReadOnly",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:DescribeVpcs",
+        "ec2:DescribeSubnets",
+        "ec2:DescribeRouteTables",
+        "ec2:DescribeSecurityGroups",
+        "ec2:DescribeInternetGateways"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
